@@ -1,8 +1,8 @@
 'use client'
-
+ 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-
+ 
 const COLORS = {
   bg: '#F3EFE6',
   surface: '#FFFFFF',
@@ -17,20 +17,20 @@ const COLORS = {
   servedButton: '#3F7A4E',
   danger: '#B3492E',
 }
-
+ 
 const ACTIVE_STATUSES = ['received', 'cooking']
-
+ 
 export default function KitchenPage() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionErrorByOrder, setActionErrorByOrder] = useState({})
   const [now, setNow] = useState(() => Date.now())
-
+ 
   // โหลดออเดอร์ที่ยังไม่จบตอนเปิดหน้าครั้งแรก
   useEffect(() => {
     let cancelled = false
-
+ 
     async function loadInitialOrders() {
       setLoading(true)
       setError('')
@@ -39,25 +39,25 @@ export default function KitchenPage() {
         .select('id, table_number, items, status, created_at')
         .in('status', ACTIVE_STATUSES)
         .order('created_at', { ascending: true })
-
+ 
       if (cancelled) return
-
+ 
       if (fetchError) {
         setError('โหลดออเดอร์ไม่สำเร็จ กรุณารีเฟรชหน้านี้')
         setLoading(false)
         return
       }
-
+ 
       setOrders(data || [])
       setLoading(false)
     }
-
+ 
     loadInitialOrders()
     return () => {
       cancelled = true
     }
   }, [])
-
+ 
   // ฟัง Realtime: ออเดอร์ใหม่ (INSERT) และการเปลี่ยนสถานะ (UPDATE)
   useEffect(() => {
     const channel = supabase
@@ -91,18 +91,18 @@ export default function KitchenPage() {
         }
       )
       .subscribe()
-
+ 
     return () => {
       supabase.removeChannel(channel)
     }
   }, [])
-
+ 
   // อัปเดตเวลาทุก 30 วิ เพื่อให้ "สั่งมาแล้ว N นาที" สดอยู่เสมอ (จอนี้เปิดทิ้งไว้ตลอด)
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 30000)
     return () => clearInterval(interval)
   }, [])
-
+ 
   async function handleStartCooking(order) {
     setActionErrorByOrder((prev) => ({ ...prev, [order.id]: '' }))
     const { error: updateError } = await supabase
@@ -110,7 +110,7 @@ export default function KitchenPage() {
       .update({ status: 'cooking' })
       .eq('id', order.id)
       .eq('status', 'received')
-
+ 
     if (updateError) {
       setActionErrorByOrder((prev) => ({ ...prev, [order.id]: 'อัปเดตไม่สำเร็จ ลองใหม่' }))
       return
@@ -119,14 +119,14 @@ export default function KitchenPage() {
       prev.map((o) => (o.id === order.id ? { ...o, status: 'cooking' } : o))
     )
   }
-
+ 
   async function handleServed(order) {
     setActionErrorByOrder((prev) => ({ ...prev, [order.id]: '' }))
     const { error: updateError } = await supabase
       .from('orders')
       .update({ status: 'served' })
       .eq('id', order.id)
-
+ 
     if (updateError) {
       setActionErrorByOrder((prev) => ({ ...prev, [order.id]: 'อัปเดตไม่สำเร็จ ลองใหม่' }))
       return
@@ -134,18 +134,18 @@ export default function KitchenPage() {
     // เอาการ์ดออกจากจอทันที ไม่ต้องรอ realtime
     setOrders((prev) => prev.filter((o) => o.id !== order.id))
   }
-
+ 
   const orderCount = orders.length
-
+ 
   return (
     <main style={styles.page}>
       <header style={styles.header}>
         <h1 style={styles.title}>ครัว chacha</h1>
         <span style={styles.countBadge}>{orderCount} ออเดอร์</span>
       </header>
-
+ 
       {error && <p style={styles.errorBanner}>{error}</p>}
-
+ 
       {loading ? (
         <p style={styles.loadingText}>กำลังโหลดออเดอร์...</p>
       ) : orders.length === 0 ? (
@@ -167,7 +167,7 @@ export default function KitchenPage() {
     </main>
   )
 }
-
+ 
 function OrderCard({ order, now, error, onStartCooking, onServed }) {
   const isCooking = order.status === 'cooking'
   const minutesAgo = Math.max(
@@ -179,7 +179,7 @@ function OrderCard({ order, now, error, onStartCooking, onServed }) {
     minute: '2-digit',
   })
   const items = Array.isArray(order.items) ? order.items : []
-
+ 
   return (
     <div
       style={{
@@ -195,9 +195,9 @@ function OrderCard({ order, now, error, onStartCooking, onServed }) {
           <span style={styles.minutesAgo}>{minutesAgo} นาทีที่แล้ว</span>
         </div>
       </div>
-
+ 
       {isCooking && <span style={styles.cookingTag}>กำลังทำ</span>}
-
+ 
       <ul style={styles.itemList}>
         {items.map((line, idx) => (
           <li key={idx} style={styles.itemLine}>
@@ -206,9 +206,9 @@ function OrderCard({ order, now, error, onStartCooking, onServed }) {
           </li>
         ))}
       </ul>
-
+ 
       {error && <p style={styles.cardError}>{error}</p>}
-
+ 
       <div style={styles.cardButtonRow}>
         {order.status === 'received' && (
           <button type="button" style={styles.startButton} onClick={onStartCooking}>
@@ -222,7 +222,7 @@ function OrderCard({ order, now, error, onStartCooking, onServed }) {
     </div>
   )
 }
-
+ 
 const styles = {
   page: {
     minHeight: '100vh',
